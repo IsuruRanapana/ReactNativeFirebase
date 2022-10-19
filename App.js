@@ -1,117 +1,106 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
+import {Text, View, StyleSheet} from 'react-native';
+import {useEffect, useState} from 'react';
+import auth from '@react-native-firebase/auth';
+import {Button} from './src/components';
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
 
-import React from 'react';
-import type {Node} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+export default function App() {
+    const [initializing, setInitializing] = useState(true);
+    const [user, setUser] = useState();
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+    function onAuthStateChanged(user) {
+        setUser(user);
+        if (initializing) {
+            setInitializing(false);
+        }
+    }
 
-/* $FlowFixMe[missing-local-annot] The type annotation(s) required by Flow's
- * LTI update could not be added via codemod */
-const Section = ({children, title}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
+    const signupWithEmailAndPassword = () => {
+        auth().createUserWithEmailAndPassword('raaibranapana.test2@gmail.com', 'aaaaaaaaa')
+            .then(() => {
+                console.log('User account created & signed in!');
+            })
+            .catch(error => {
+                if (error.code === 'auth/email-already-in-use') {
+                    console.log('That email address is already in use!');
+                }
 
-const App: () => Node = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+                if (error.code === 'auth/invalid-email') {
+                    console.log('That email address is invalid!');
+                }
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+                console.error(error);
+            });
+    };
+    const signInEmailAndPassword = () => {
+        auth().signInWithEmailAndPassword('raaibranapana.test2@gmail.com', 'aaaaaaaaa')
+            .then(() => {
+                console.log('User account signed in!');
+            })
+            .catch(error => {
+                if (error.code === 'auth/email-already-in-use') {
+                    console.log('That email address is already in use!');
+                }
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+                if (error.code === 'auth/invalid-email') {
+                    console.log('That email address is invalid!');
+                }
+
+                console.error(error);
+            });
+    };
+    const googleSignIn = async () => {
+        // Check if your device supports Google Play
+        await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
+        // Get the users ID token
+        const {idToken} = await GoogleSignin.signIn();
+
+        // Create a Google credential with the token
+        const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+
+        // Sign-in the user with the credential
+        return auth().signInWithCredential(googleCredential);
+    };
+
+
+    const signOut = () => {
+        auth()
+            .signOut()
+            .then(() => console.log('User signed out!'));
+    };
+
+    useEffect(() => {
+        const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
+        return subscriber;
+    }, []);
+
+    if (initializing) {
+        return null;
+    }
+
+    if (!user) {
+        return (
+            <View style={styles.container}>
+                <Button labelText={'Signup'} onPress={signupWithEmailAndPassword}/>
+                <Button labelText={'Signin'} onPress={signInEmailAndPassword}/>
+                <Button labelText={'Google Signin'} onPress={googleSignIn}/>
+            </View>
+        );
+    }
+
+
+    return (
+        <View style={styles.container}>
+            <Text>Welcome {user.email}</Text>
+            <Button labelText={'Signout'} onPress={signOut}/>
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
+    );
+}
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });
-
-export default App;
